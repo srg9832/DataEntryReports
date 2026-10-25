@@ -121,9 +121,13 @@ async function loadReport() {
   const token=++state.epoch;
   setBusy(true,"Reading live records…");showFlash("");
   try {
-    const report=await rpc("data_entry_get_report",{p_unit_id:unitId,p_month:month+"-01"});
+    const [report,approvals]=await Promise.all([
+      rpc("data_entry_get_report",{p_unit_id:unitId,p_month:month+"-01"}),
+      rpc("data_entry_uniform_approvals",{p_unit_id:unitId,p_month:month+"-01"})
+    ]);
     if (token!==state.epoch) return;
     state.report=report||{members:[],events:[]};
+    state.report.events=[...(Array.isArray(report?.events)?report.events:[]),...(Array.isArray(approvals)?approvals:[])];
     $("reportPanel").classList.remove("hidden");$("accessMessage").classList.add("hidden");
     renderReport();
   } catch(err) {if(token===state.epoch){state.report=null;showFlash(errorMessage(err));$("reportBody").innerHTML="";}}
@@ -135,9 +139,12 @@ const compactDate = (value) => {
 };
 function makeRecord(record) {
   const posted = Boolean(record.is_posted);
-  const headline = record.kind==="feedback" ? (record.result||"Not recorded") : (record.score||"—");
-  const subtitle = record.kind==="feedback" ? (record.label||"Feedback")
-    : [record.label,record.result].filter(Boolean).join(" · ");
+  const headline = record.kind==="uniform_approval" ? "Approved" :
+    record.kind==="feedback" ? (record.result||"Not recorded") : (record.score||"—");
+  const subtitle = record.kind==="uniform_approval"
+      ? "Inspection "+compactDate(record.inspection_date)+" · "+(record.score||"—")+" · Review approval "+compactDate(record.event_date)
+      : record.kind==="feedback" ? (record.label||"Feedback")
+      : [record.label,record.result].filter(Boolean).join(" · ");
   let pieces='<div class="record'+(posted?" posted":"")+'"><div class="record-line">'+
     '<span class="record-value">'+safe(headline)+'</span>'+
     '<span class="record-date">'+safe(compactDate(record.event_date))+'</span>';
@@ -178,19 +185,32 @@ function reportMemberRows(filtered) {
   for(const member of filtered) {
     const capid=String(member.capid||"").trim();
     const all=byCapid.get(capid)||[];
-    const current=all.filter(e=>monthKey(e.event_date)===month);
+    const current=all.filter(e=>monthKey(e.event_date)===month && e.kind!=="uniform");
     const countPending=current.filter(e=>!e.is_posted).length;
-    if ($("pendingOnly").checked && !countPending) continue;
+    if($("pendingOnly").checked && !countPending) continue;
     const groups=(kind)=>current.filter(e=>e.kind===kind);
     const cell=(kind)=>{
       const items=groups(kind);
       return items.length?items.map(makeRecord).join(""):'<span class="no-data">—</span>';
     };
-    const history=all.filter(e=>e.kind==="uniform");
-    const fullName=(member.last_name||"")+", "+(member.first_name||"");
-    rows.push('<tr><td class="capid">'+safe(capid)+'</td><td class="member-name">'+safe(fullName)+'</td>'+
-      '<td>'+cell("feedback")+'</td><td>'+cell("drill")+'</td><td>'+cell("uniform")+'</td>'+
-      '<td>'+priorHistory(history,prev1)+priorHistory(history,prev2)+'</td></tr>');
+    const uniforms=all.filter(e=>e.kind==="uniform");
+    const accepted=groups("uniform_approval");
+    const historyMonths=[month,prev1,prev2];
+    const history=historyMonths.map(m=>{
+      const checks=uniforms.filter(e=>monthKey(e.event_date)===m);
+      if(!checks.length)return "";
+      const label=monthLabel(m).split(" ")[0].toUpperCase();
+      return checks.map(e=>'<div class="history-line"><span class="history-label">'+safe(label)+'</span> '+
+        '<strong>'+safe(e.score||"—")+'</strong> · '+safe(compactDate(e.event_date))+
+        ' · '+safe(e.label||"Inspected")+'</div>').join("");
+    }).filter(Boolean).join("");
+    const uniformCell=
+      (accepted.length?accepted.map(makeRecord).join(""):"")+
+      (history?'<div class="uniform-history-title">Inspection history (not automatically approved)</div>'+history:"")+
+      (!accepted.length&&!history?'<span class="no-data">—</span>':"");
+    const name=[member.last_name,member.first_name].filter(Boolean).join(", ");
+    rows.push('<tr><td class="capid">'+safe(capid)+'</td><td class="member-name">'+safe(name)+'</td>'+
+      '<td>'+cell("feedback")+'</td><td>'+cell("drill")+'</td><td class="uniform-cell">'+uniformCell+'</td></tr>');
   }
   return rows;
 }
@@ -199,7 +219,7 @@ function renderReport() {
   const month=$("month").value;
   const members=sortedMembers(Array.isArray(state.report.members)?state.report.members:[]);
   const events=Array.isArray(state.report.events)?state.report.events:[];
-  const current=events.filter(e=>monthKey(e.event_date)===month);
+  const current=events.filter(e=>monthKey(e.event_date)===month && e.kind!=="uniform");
   const pending=current.filter(e=>!e.is_posted).length;
   const entered=current.length-pending;
   const pendingMembers=new Set(current.filter(e=>!e.is_posted).map(e=>String(e.capid))).size;
@@ -207,7 +227,6 @@ function renderReport() {
   $("reportTitle").textContent=(unit?.charter_number||unit?.name||"Unit")+"  |  "+monthLabel(month);
   $("reportSubtitle").textContent="Uniform history: "+monthLabel(monthOffset(month,-2))+
     " & "+monthLabel(monthOffset(month,-1))+" (reference only)";
-  $("historyHeader").textContent="Uniform · Previous 2 Months";
   const metrics=[
     ["Members",members.length],
     ["Pending records",pending],
@@ -223,7 +242,7 @@ function renderReport() {
       .some(value=>String(value||"").toLowerCase().includes(q)));
   const rows=reportMemberRows(filtered);
   $("reportBody").innerHTML=rows.length?rows.join("") :
-    '<tr><td colspan="6" class="muted" style="text-align:center;padding:14px">No members match your filters.</td></tr>';
+    '<tr><td colspan="5" class="muted" style="text-align:center;padding:14px">No members match your filters.</td></tr>';
 }
 
 async function recordClick(event) {
@@ -233,10 +252,16 @@ async function recordClick(event) {
   const unit=$("unit").value, month=$("month").value;
   button.disabled=true;showFlash("");
   try {
-    await rpc("data_entry_set_posted",{
-      p_unit_id:unit,p_record_type:button.dataset.type,
-      p_source_id:button.dataset.source,p_is_posted:!old
-    });
+    if(button.dataset.type==="uniform_approval"){
+      await rpc("data_entry_set_uniform_posted",{
+        p_unit_id:unit,p_feedback_id:button.dataset.source,p_is_posted:!old
+      });
+    }else{
+      await rpc("data_entry_set_posted",{
+        p_unit_id:unit,p_record_type:button.dataset.type,
+        p_source_id:button.dataset.source,p_is_posted:!old
+      });
+    }
     if (unit===$("unit").value && month===$("month").value) await loadReport();
   } catch(err) {showFlash("Could not save eServices status: "+errorMessage(err));button.disabled=false;}
 }
@@ -251,21 +276,26 @@ function exportCSV() {
   const month=$("month").value;
   const events=Array.isArray(state.report.events)?state.report.events:[];
   const members=sortedMembers(state.report.members||[]);
-  const header=["CAPID","Last name","First name","Feedback (Decision / Date)","Drill (Test / Score / Date)",
-    "Uniform (Selected Month)","Uniform (Previous Month)","Uniform (Two Months Ago)",
+  const header=["CAPID","Last name","First name","Feedback (Decision / Date)",
+    "Drill (Test / Score / Date)","Uniform (History + Review Approval)",
     "Needs eServices entry","Entered records"];
   const rows=[header];
-  for(const member of members) {
+  for(const member of members){
     const ev=events.filter(e=>String(e.capid)===String(member.capid));
-    const inMonth=ev.filter(e=>monthKey(e.event_date)===month);
-    const fmt=(kind,mo)=>ev.filter(e=>e.kind===kind&&monthKey(e.event_date)===mo)
-      .map(e=>[e.label,e.score,e.result,dateLabel(e.event_date),e.is_posted?"Entered":"Needs entry"]
-      .filter(Boolean).join(" · ")).join("; ");
-    rows.push([
-      member.capid,member.last_name,member.first_name,fmt("feedback",month),fmt("drill",month),
-      fmt("uniform",month),fmt("uniform",monthOffset(month,-1)),fmt("uniform",monthOffset(month,-2)),
-      inMonth.filter(e=>!e.is_posted).length,inMonth.filter(e=>e.is_posted).length
-    ]);
+    const inMonth=ev.filter(e=>monthKey(e.event_date)===month&&e.kind!=="uniform");
+    const fmt=(kind)=>inMonth.filter(e=>e.kind===kind)
+      .map(e=>[e.label,e.score,e.result,dateLabel(e.event_date),
+        e.is_posted?"Entered":"Needs entry"].filter(Boolean).join(" · ")).join("; ");
+    const approved=inMonth.filter(e=>e.kind==="uniform_approval")
+      .map(e=>"Approved inspection "+dateLabel(e.inspection_date)+" / "+e.score+
+        " on "+dateLabel(e.event_date)+" / "+(e.is_posted?"Entered":"Needs entry"));
+    const inspected=ev.filter(e=>e.kind==="uniform"&&
+      [month,monthOffset(month,-1),monthOffset(month,-2)].includes(monthKey(e.event_date)))
+      .map(e=>"Inspection "+dateLabel(e.event_date)+" / "+(e.score||"—")+
+        " / "+(e.label||""));
+    rows.push([member.capid,member.last_name,member.first_name,fmt("feedback"),fmt("drill"),
+      [...approved,...inspected].join("; "),
+      inMonth.filter(e=>!e.is_posted).length,inMonth.filter(e=>e.is_posted).length]);
   }
   const csv="\uFEFF"+rows.map(row=>row.map(csvField).join(",")).join("\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
