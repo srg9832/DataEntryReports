@@ -15,6 +15,7 @@ const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
   "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
 })[ch]);
 const monthKey = (date) => date ? String(date).slice(0,7) : "";
+const isReportableEvent = e => e && ["feedback","drill","uniform_approval"].includes(e.kind);
 const monthOffset = (month, step) => {
   const [y,m] = month.split("-").map(Number);
   const d = new Date(Date.UTC(y,m-1+step,1));
@@ -129,9 +130,19 @@ async function loadReport() {
     state.report=report||{members:[],events:[]};
     // Inspection scores are NOT eServices entries. Only explicitly approved uniform reviews are.
     state.report.events=[
-      ...(Array.isArray(report?.events)?report.events.filter(e=>e.kind!=="uniform"):[]),
+      ...(Array.isArray(report?.events)?report.events.filter(isReportableEvent):[]),
       ...(Array.isArray(approvals)?approvals.filter(e=>e.kind==="uniform_approval"):[])
     ];
+    // Include anyone with a reportable event, even if not on today's active roster.
+    state.report.members=Array.isArray(state.report.members)?state.report.members:[];
+    const known=new Set(state.report.members.map(m=>String(m.capid||"").trim()));
+    for(const event of state.report.events){
+      const id=String(event.capid||"").trim();
+      if(id&&!known.has(id)){
+        state.report.members.push({capid:id,first_name:event.first_name||"",last_name:event.last_name||""});
+        known.add(id);
+      }
+    }
     $("reportPanel").classList.remove("hidden");$("accessMessage").classList.add("hidden");
     renderReport();
   } catch(err) {if(token===state.epoch){state.report=null;showFlash(errorMessage(err));$("reportBody").innerHTML="";}}
@@ -146,7 +157,7 @@ function makeRecord(record) {
   const headline = record.kind==="uniform_approval" ? "Approved" :
     record.kind==="feedback" ? (record.result||"Not recorded") : (record.score||"—");
   const subtitle = record.kind==="uniform_approval"
-      ? (posted?"Entered in eServices":"Needs eServices Entry")+" · Approved "+compactDate(record.event_date)
+      ? (posted?"Entered in eServices":"Needs eServices Entry")
       : record.kind==="feedback" ? (record.label||"Feedback")
       : [record.label,record.result].filter(Boolean).join(" · ");
   let pieces='<div class="record'+(posted?" posted":"")+'"><div class="record-line">'+
@@ -171,7 +182,7 @@ function reportMemberRows(filtered) {
   const pendingOnly=$("pendingOnly").checked;
   const byCapid=new Map();
   for(const e of events) {
-    if(monthKey(e.event_date)!==month) continue;
+    if(!isReportableEvent(e)||monthKey(e.event_date)!==month) continue;
     const capid=String(e.capid||"").trim();
     if(!byCapid.has(capid)) byCapid.set(capid,[]);
     byCapid.get(capid).push(e);
@@ -199,7 +210,7 @@ function renderReport() {
   const month=$("month").value;
   const members=sortedMembers(Array.isArray(state.report.members)?state.report.members:[]);
   const events=Array.isArray(state.report.events)?state.report.events:[];
-  const current=events.filter(e=>monthKey(e.event_date)===month);
+  const current=events.filter(e=>isReportableEvent(e)&&monthKey(e.event_date)===month);
   const pending=current.filter(e=>!e.is_posted);
   const entered=current.length-pending.length;
   const pendingMembers=new Set(pending.map(e=>String(e.capid))).size;
@@ -269,7 +280,7 @@ function exportCSV() {
       member.capid,member.first_name,member.last_name,
       (member.last_name||"")+", "+(member.first_name||"")
     ].some(s=>String(s||"").toLowerCase().includes($("search").value.trim().toLowerCase())))continue;
-    const entries=events.filter(e=>String(e.capid)===String(member.capid)&&monthKey(e.event_date)===month);
+    const entries=events.filter(e=>isReportableEvent(e)&&String(e.capid)===String(member.capid)&&monthKey(e.event_date)===month);
     const visible=pendingOnly?entries.filter(e=>!e.is_posted):entries;
     if(!visible.length)continue;
     const fmt=kind=>visible.filter(e=>e.kind===kind)
