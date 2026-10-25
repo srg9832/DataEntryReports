@@ -154,7 +154,7 @@ const compactDate = (value) => {
 };
 function makeRecord(record) {
   const posted = Boolean(record.is_posted);
-  const headline = record.kind==="uniform_approval" ? "Approved" :
+  const headline = record.kind==="uniform_approval" ? "Uniform Record Approved" :
     record.kind==="feedback" ? (record.result||"Not recorded") : (record.score||"—");
   const subtitle = record.kind==="uniform_approval"
       ? (posted?"Entered in eServices":"Needs eServices Entry")
