@@ -288,7 +288,6 @@ function exportCSV() {
         e.is_posted?"Entered":"Needs entry"].filter(Boolean).join(" · ")).join("; ");
     const approved=visible.filter(e=>e.kind==="uniform_approval")
       .map(e=>"Approved on "+dateLabel(e.event_date)+
-        " · Inspection "+dateLabel(e.inspection_date)+
         " · "+(e.is_posted?"Entered":"Needs eServices entry")).join("; ");
     rows.push([member.capid,member.last_name,member.first_name,fmt("feedback"),fmt("drill"),
       approved,visible.filter(e=>!e.is_posted).length,visible.filter(e=>e.is_posted).length]);
