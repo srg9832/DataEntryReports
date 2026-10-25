@@ -25,33 +25,33 @@
   <div id="workspace" class="hidden">
     <header class="topbar">
       <div class="top-inner">
-        <div><div class="logo">CAP <span>/ Data Entry Reports</span></div><div class="top-subtitle">eServices monthly entry worksheet</div></div>
+        <div><div class="logo">CAP <span>/ Data Entry Reports</span></div></div>
         <div class="account"><span id="accountName"></span><button id="passwordButton" class="topbutton">Password</button><button id="logout" class="topbutton">Sign out</button></div>
       </div>
     </header>
     <main class="main">
       <div class="heading">
-        <div><h1>Monthly entry report</h1><p class="muted">One row per member. Records are pulled live from the three CAP applications.</p></div>
+        <h1>Monthly Data Entry</h1>
         <button id="adminToggle" class="secondary hidden" type="button">Manage Access</button>
       </div>
       <div id="flash" class="error hidden" role="status"></div>
       <div class="toolbar">
         <div class="control"><label for="unit">Unit</label><select id="unit"></select></div>
-        <div class="control month"><label for="month">Reporting month</label><input type="month" id="month"></div>
-        <div class="control search"><label for="search">Find member or CAPID</label><input id="search" type="search" placeholder="Search roster"></div>
-        <label class="checkcontrol"><input type="checkbox" id="pendingOnly"> Only needs entry</label>
-        <div class="toolbar-actions"><button id="refresh" class="secondary">Refresh</button><button id="csv" class="secondary">Export CSV</button><button id="print" class="secondary">Print</button></div>
+        <div class="control month"><label for="month">Month</label><input type="month" id="month"></div>
+        <div class="control search"><label for="search">CAPID / Name</label><input id="search" type="search" placeholder="Search roster"></div>
+        <label class="checkcontrol"><input type="checkbox" id="pendingOnly"> Pending only</label>
+        <div class="toolbar-actions"><button id="refresh" class="secondary">Refresh</button><button id="csv" class="secondary">CSV</button><button id="print" class="secondary">Print</button></div>
       </div>
       <section id="accessMessage" class="notice hidden"></section>
       <section id="reportPanel">
         <div id="metrics" class="metrics" aria-live="polite"></div>
         <div class="table-heading"><div><strong id="reportTitle">Monthly records</strong><div class="muted small" id="reportSubtitle"></div></div><span id="loadStatus" class="muted small"></span></div>
         <div class="table-scroll"><table class="report-table"><thead><tr>
-          <th>CAPID</th><th>Member</th><th>Feedback<br><small>Decision · Date</small></th>
-          <th>Drill test<br><small>Score · Date</small></th><th>Uniform — selected month<br><small>Score · Date</small></th>
-          <th id="historyHeader">Uniform history<br><small>Previous 2 months</small></th>
+          <th>CAPID</th><th>Member</th><th>Feedback</th>
+          <th>Drill Test</th><th>Uniform — Month</th>
+          <th id="historyHeader">Uniform History</th>
         </tr></thead><tbody id="reportBody"></tbody></table></div>
-        <div class="legend"><span><b class="dot pending"></b> Needs entry</span><span><b class="dot completed"></b> Entered in eServices</span><span>Only selected-month records can be marked entered; historical scores are reference-only.</span></div>
+        <div class="legend"><span><b class="dot pending"></b> Needs entry</span><span><b class="dot completed"></b> Entered in eServices</span><span>History is read-only.</span></div>
       </section>
       <section id="adminPanel" class="admin-panel hidden">
         <div class="table-heading"><div><strong>Reporting access</strong><div class="muted small">Available to CAP Applications administrators only. Grant access to existing login accounts.</div></div><button id="closeAdmin" class="secondary">Close</button></div>
