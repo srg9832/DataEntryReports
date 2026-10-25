@@ -38,8 +38,8 @@
       <div class="toolbar">
         <div class="control"><label for="unit">Unit</label><select id="unit"></select></div>
         <div class="control month"><label for="month">Month</label><input type="month" id="month"></div>
-        <div class="control search"><label for="search">CAPID / Name</label><input id="search" type="search" placeholder="Search roster"></div>
-        <label class="checkcontrol"><input type="checkbox" id="pendingOnly"> Pending only</label>
+        <div class="control search"><label for="search">CAPID / Name</label><input id="search" type="search" placeholder="Search pending entries"></div>
+        <label class="checkcontrol"><input type="checkbox" id="pendingOnly" checked> Pending only</label>
         <div class="toolbar-actions"><button id="refresh" class="secondary">Refresh</button><button id="csv" class="secondary">CSV</button><button id="print" class="secondary">Print</button></div>
       </div>
       <section id="accessMessage" class="notice hidden"></section>
@@ -48,9 +48,9 @@
         <div class="table-heading"><div><strong id="reportTitle">Monthly records</strong><div class="muted small" id="reportSubtitle"></div></div><span id="loadStatus" class="muted small"></span></div>
         <div class="table-scroll"><table class="report-table"><thead><tr>
           <th>CAPID</th><th>Member</th><th>Feedback</th>
-          <th>Drill Test</th><th>Uniform Inspections · History / Approved</th>
+          <th>Drill Test</th><th>Uniform Approved</th>
         </tr></thead><tbody id="reportBody"></tbody></table></div>
-        <div class="legend"><span><b class="dot pending"></b> Needs entry</span><span><b class="dot completed"></b> Entered in eServices</span><span>Inspection scores are history only; approved review results can be marked entered.</span></div>
+        <div class="legend"><span><b class="dot pending"></b> Needs entry</span><span><b class="dot completed"></b> Entered in eServices</span><span>Only approved Uniform Review decisions appear; inspection history stays in the Uniform Inspection Tracker.</span></div>
       </section>
       <section id="adminPanel" class="admin-panel hidden">
         <div class="table-heading"><div><strong>Reporting access</strong><div class="muted small">Available to CAP Applications administrators only. Grant access to existing login accounts.</div></div><button id="closeAdmin" class="secondary">Close</button></div>
@@ -76,6 +76,6 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.0/dist/umd/supabase.min.js"></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=20261024-3" defer></script>
 </body>
 </html>
