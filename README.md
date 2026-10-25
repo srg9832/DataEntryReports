@@ -20,7 +20,7 @@ A compact, login-protected worksheet for CAP staff transferring feedback, drill-
 - **Feedback:** finalized Leadership Feedback records using the discussion date (fallback review-end date) and recorded promotion decision. **Approved** is shown only when the source decision.promotion is approved; don't confuse that with merely creating feedback.
 - **Drill:** only **submitted** drill records with test name/code, raw/max score, date, and pass/fail. Multiple tests per person remain separate.
 - **Uniform:** a single report column shows raw inspection date/score/rating history for the selected month and two prior months. Raw inspection “passed” flags are **not** eServices approvals.
-- **Approved Uniform:** a Leadership Feedback review must explicitly select an inspection and approve it; that review date (plus original inspection date) is shown in the same column as a separate actionable eServices item. An unreviewed or declined inspection cannot create an approved entry.
+- **Approved Uniform:** an authorized Uniform Inspection Tracker reviewer must explicitly select an inspection in the Uniform Review tab and approve it; that review date (plus original inspection date) is shown in the same column as a separate actionable eServices item. An unreviewed or declined inspection cannot create an approved entry.
 - **eServices status:** records start as **Needs entry**. Authorized users click **Mark entered**, or undo a mistaken mark. This is tracking **only**; nothing is sent automatically to eServices.
 - **CSV / Print:** printable compact five-column grid and one-row-per-member CSV. The single uniform field includes inspection history and any approved review date.
 
@@ -32,9 +32,9 @@ Migration data_entry_reports_initial_additive creates only:
 - public.data_entry_get_units() — authorized unit listing
 - public.data_entry_get_report(uuid,date) — authorized monthly report
 - public.data_entry_set_posted(uuid,text,text,boolean) — permission-checked entry confirmation
-- public.data_entry_uniform_approvals(uuid,date) — approved uniform review results from Leadership Feedback
+- public.data_entry_uniform_approvals(uuid,date) — approved uniform review results from the Uniform Inspection Tracker
 - public.data_entry_set_uniform_posted(uuid,uuid,boolean) — mark only approved review results as entered
-- public.leadership_uniform_reviews — authoritative inspection decisions linked to feedback records
+- public.uniform_promotion_reviews — authoritative inspection decisions linked to source inspections
 
 All new tables enable RLS; source application schema is unchanged. The new server functions check auth.uid() and unit authorization before reading source records. Entry-confirmation RPC also verifies the referenced record belongs to the selected unit.
 
@@ -49,4 +49,8 @@ All new tables enable RLS; source application schema is unchanged. The new serve
 
 ## Acceptance rule
 
-Previously recorded inspection scores and previously submitted feedback do not automatically become uniform approvals. An authorized reviewer must explicitly link an inspection to a cadet Leadership Feedback review. Approval is independent of any score-based pass/fail flag stored in the inspection app. The approval and rejection paths are stored immutably with the review.
+Previously recorded inspection scores and previously submitted feedback do not automatically become uniform approvals. An authorized reviewer must explicitly approve an inspection in Uniform Inspection Tracker → Uniform Review. Approval is independent of any score-based pass/fail flag stored in the inspection app. The approval and rejection paths are stored immutably with the review.
+
+## Current uniform decision source
+
+The existing `data_entry_uniform_approvals` RPC now reads `public.uniform_promotion_reviews` (Uniform Inspection Tracker) rather than Leadership Feedback. It uses the **review date** for report-month grouping and `record_type=uniform_approval` to track entry into eServices. Original inspection date and score remain reference history; a rejected review never enters the eServices queue. The posting RPC's existing `p_feedback_id` parameter name remains for backward compatibility; its UUID now identifies the Uniform Review row.
