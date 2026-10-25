@@ -129,30 +129,41 @@ async function loadReport() {
   } catch(err) {if(token===state.epoch){state.report=null;showFlash(errorMessage(err));$("reportBody").innerHTML="";}}
   finally{if(token===state.epoch) setBusy(false);}
 }
+const compactDate = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value||""));
+  return match ? Number(match[2])+"/"+Number(match[3])+"/"+match[1].slice(2) : "—";
+};
 function makeRecord(record) {
-  const posted=Boolean(record.is_posted);
-  const markAllowed=canMark();
-  const verb=posted?"✓ Entered · Undo":"Mark entered";
-  let pieces='<div class="record'+(posted?" posted":"")+'">'+
-    '<div class="record-date">'+safe(dateLabel(record.event_date))+
-    (record.score?' <span class="record-score"> · '+safe(record.score)+'</span>':"")+'</div>'+
-    '<div class="record-title">'+safe(record.label||record.kind)+'</div>'+
-    '<div class="record-result">'+safe(record.result||"")+'</div>';
-  if(markAllowed) {
+  const posted = Boolean(record.is_posted);
+  const headline = record.kind==="feedback" ? (record.result||"Not recorded") : (record.score||"—");
+  const subtitle = record.kind==="feedback" ? (record.label||"Feedback")
+    : [record.label,record.result].filter(Boolean).join(" · ");
+  let pieces='<div class="record'+(posted?" posted":"")+'"><div class="record-line">'+
+    '<span class="record-value">'+safe(headline)+'</span>'+
+    '<span class="record-date">'+safe(compactDate(record.event_date))+'</span>';
+  if(canMark()) {
     pieces+='<button type="button" class="record-action" data-action="post" data-type="'+safe(record.kind)+
-      '" data-source="'+safe(record.source_id)+'" data-posted="'+(posted?"true":"false")+'">'+verb+'</button>';
+      '" data-source="'+safe(record.source_id)+'" data-posted="'+(posted?"true":"false")+
+      '" title="'+(posted?"Undo eServices entry":"Mark as entered in eServices")+
+      '" aria-label="'+(posted?"Undo entered status":"Mark entered status")+
+      ' for '+safe(record.kind)+' on '+safe(compactDate(record.event_date))+'">'+
+      (posted?"✓ Entered":"Mark")+'</button>';
   } else {
-    pieces+='<div class="record-result">'+(posted?"✓ Entered in eServices":"• Needs eServices entry")+"</div>";
+    pieces+='<span class="record-result">'+(posted?"✓ Entered":"Pending")+'</span>';
   }
-  return pieces+"</div>";
+  pieces+='</div><div class="record-title">'+safe(subtitle)+'</div></div>';
+  return pieces;
 }
 function priorHistory(uniform,priorMonth) {
   const list=uniform.filter(e=>monthKey(e.event_date)===priorMonth);
-  return '<div class="history-label">'+safe(monthLabel(priorMonth))+'</div>'+
-    (list.length?list.map(e=>'<div class="history-line">'+safe(dateLabel(e.event_date))+
-    ' · <b>'+safe(e.score||"—")+'</b> · '+safe(e.label||e.result||"")+'</div>').join("") :
-    '<div class="no-data">—</div>');
+  const label=monthLabel(priorMonth).split(" ")[0].toUpperCase();
+  return list.length ? list.map(e=>
+    '<div class="history-line"><span class="history-label">'+safe(label)+'</span> '+
+    '<strong>'+safe(e.score||"—")+'</strong> · '+safe(compactDate(e.event_date))+
+    (e.label?' · '+safe(e.label):'')+'</div>').join("") :
+    '<div class="history-line"><span class="history-label">'+safe(label)+'</span> <span class="no-data">—</span></div>';
 }
+
 function reportMemberRows(filtered) {
   const month=$("month").value;
   const prev1=monthOffset(month,-1),prev2=monthOffset(month,-2);
@@ -193,28 +204,28 @@ function renderReport() {
   const entered=current.length-pending;
   const pendingMembers=new Set(current.filter(e=>!e.is_posted).map(e=>String(e.capid))).size;
   const unit=selectedUnit();
-  $("reportTitle").textContent=(unit?.charter_number||unit?.name||"Unit") + " · "+monthLabel(month);
-  $("reportSubtitle").textContent="Uniform score history includes "+monthLabel(monthOffset(month,-2))+
-    ", "+monthLabel(monthOffset(month,-1))+" and the selected month. Prior months are reference only.";
-  $("historyHeader").innerHTML="Uniform history<br><small>"+safe(monthLabel(monthOffset(month,-2)))+
-    " &amp; "+safe(monthLabel(monthOffset(month,-1)))+"</small>";
+  $("reportTitle").textContent=(unit?.charter_number||unit?.name||"Unit")+"  |  "+monthLabel(month);
+  $("reportSubtitle").textContent="Uniform history: "+monthLabel(monthOffset(month,-2))+
+    " & "+monthLabel(monthOffset(month,-1))+" (reference only)";
+  $("historyHeader").textContent="Uniform · Previous 2 Months";
   const metrics=[
-    ["Members",members.length,"Authorized unit roster"],
-    ["Records to enter",pending,"Feedback, drill and uniforms"],
-    ["Entered in eServices",entered,"Marked complete this month"],
-    ["Members with pending",pendingMembers,"Members requiring attention"]
+    ["Members",members.length],
+    ["Pending records",pending],
+    ["Entered in eServices",entered],
+    ["Members pending",pendingMembers]
   ];
-  $("metrics").innerHTML=metrics.map(([label,value,desc])=>
-    '<div class="metric"><div class="metric-label">'+safe(label)+'</div>'+
-    '<div class="metric-value">'+safe(value)+'</div><div class="metric-detail">'+safe(desc)+'</div></div>').join("");
+  $("metrics").innerHTML=metrics.map(([label,value],i)=>
+    '<div class="metric'+(i===1?" pending":"")+'"><span class="metric-label">'+safe(label)+
+    ':</span><span class="metric-value">'+safe(value)+'</span></div>').join("");
   const q=$("search").value.trim().toLowerCase();
   const filtered=members.filter(m=>
     !q||[m.capid,m.first_name,m.last_name,(m.last_name||"")+", "+(m.first_name||"")]
       .some(value=>String(value||"").toLowerCase().includes(q)));
   const rows=reportMemberRows(filtered);
   $("reportBody").innerHTML=rows.length?rows.join("") :
-    '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No members match your filters.</td></tr>';
+    '<tr><td colspan="6" class="muted" style="text-align:center;padding:14px">No members match your filters.</td></tr>';
 }
+
 async function recordClick(event) {
   const button=event.target.closest('button[data-action="post"]');
   if(!button || state.loading || !state.user) return;
