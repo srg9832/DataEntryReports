@@ -111,6 +111,5 @@ dialog::backdrop{background:#09223978}
 .report-table th:nth-child(3){width:19%}
 .report-table th:nth-child(4){width:20%}
 .report-table th:nth-child(5){width:34%}
-.uniform-history-title{font-size:10px;font-weight:600;color:#6c7e8c;margin-top:3px;padding-top:3px;border-top:1px dotted #cdd7e1}
 .uniform-cell .record.posted{border-bottom-color:#aacbb7}
-@media print{.uniform-history-title{font-size:8px}}
+
