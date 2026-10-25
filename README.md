@@ -16,13 +16,13 @@ A compact, login-protected worksheet for CAP staff transferring feedback, drill-
 
 ## Reporting rules
 
-- **Roster:** active members associated with the selected unit, plus members with qualifying records in the reporting month. Names are grouped by **CAPID**.
+- **Rows:** by default only members with pending eServices entries appear, grouped by **CAPID**. Turning off **Pending only** shows members with any reportable entry in that month, including entered records. Members with no reportable entries are always omitted.
 - **Feedback:** finalized Leadership Feedback records using the discussion date (fallback review-end date) and recorded promotion decision. **Approved** is shown only when the source decision.promotion is approved; don't confuse that with merely creating feedback.
 - **Drill:** only **submitted** drill records with test name/code, raw/max score, date, and pass/fail. Multiple tests per person remain separate.
-- **Uniform:** a single report column shows raw inspection date/score/rating history for the selected month and two prior months. Raw inspection “passed” flags are **not** eServices approvals.
-- **Approved Uniform:** an authorized Uniform Inspection Tracker reviewer must explicitly select an inspection in the Uniform Review tab and approve it; that review date (plus original inspection date) is shown in the same column as a separate actionable eServices item. An unreviewed or declined inspection cannot create an approved entry.
+- **Uniform:** the one uniform column shows only explicit **Approved Uniform** review decisions from the Uniform Inspection Tracker, using their review approval date. Raw inspection scores and historical inspections are never displayed in Data Entry Reports.
+- **Approved Uniform:** an authorized Uniform Inspection Tracker reviewer must explicitly select an inspection in the Uniform Review tab and approve it; that approval and its review date are displayed as an actionable eServices entry. An unreviewed or declined inspection cannot create an approved entry.
 - **eServices status:** records start as **Needs entry**. Authorized users click **Mark entered**, or undo a mistaken mark. This is tracking **only**; nothing is sent automatically to eServices.
-- **CSV / Print:** printable compact five-column grid and one-row-per-member CSV. The single uniform field includes inspection history and any approved review date.
+- **CSV / Print:** printable compact five-column grid and one-row-per-member CSV. The single uniform field includes only approved review decisions and their review dates. CSV respects search and Pending only filtering.
 
 ## Database additions
 
@@ -53,4 +53,4 @@ Previously recorded inspection scores and previously submitted feedback do not a
 
 ## Current uniform decision source
 
-The existing `data_entry_uniform_approvals` RPC now reads `public.uniform_promotion_reviews` (Uniform Inspection Tracker) rather than Leadership Feedback. It uses the **review date** for report-month grouping and `record_type=uniform_approval` to track entry into eServices. Original inspection date and score remain reference history; a rejected review never enters the eServices queue. The posting RPC's existing `p_feedback_id` parameter name remains for backward compatibility; its UUID now identifies the Uniform Review row.
+The existing `data_entry_uniform_approvals` RPC now reads `public.uniform_promotion_reviews` (Uniform Inspection Tracker) rather than Leadership Feedback. It uses the **review date** for report-month grouping and `record_type=uniform_approval` to track entry into eServices. Original inspection date and score remain in Uniform Inspection Tracker, not Data Entry Reports; a rejected review never enters the eServices queue. The posting RPC's existing `p_feedback_id` parameter name remains for backward compatibility; its UUID now identifies the Uniform Review row.
