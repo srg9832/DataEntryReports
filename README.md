@@ -7,8 +7,8 @@ A compact, login-protected worksheet for CAP staff transferring feedback, drill-
 ## Deployment
 
 1. This is a static GitHub Pages site: index.html, styles.css, app.js.
-2. In **GitHub repository → Settings → Pages → Build and deployment**, select **GitHub Actions** as the source if it isn't selected already.
-3. The included workflow publishes pushes to main. The expected Pages URL after successful deployment is https://srg9832.github.io/DataEntryReports/.
+2. In **GitHub repository → Settings → Pages → Build and deployment**, choose **Deploy from a branch** as the source, branch **main**, and folder **/ (root)**. Save.
+3. GitHub Pages automatically publishes changes committed to main. No custom Actions workflow is needed. The expected site URL once Pages finishes publishing is https://srg9832.github.io/DataEntryReports/.
 4. Sign in with your **existing CAP Applications Supabase Auth email and password**. There is no public registration.
 5. Existing users with profiles.is_app_admin = true are reporting administrators. A reporting administrator can use **Manage Access** to assign staff to units, with either **View only** or **View & mark** permissions.
 
