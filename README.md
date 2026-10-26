@@ -14,6 +14,17 @@ A compact, login-protected worksheet for CAP staff transferring feedback, drill-
 
 **Important:** Publishing the website makes the *code* public, not the member data. Source data is returned only through server-side, per-unit authorization checks in Supabase. The JavaScript contains only a publishable Supabase key, never a secret or service-role key.
 
+## Installable PWA
+
+The site is a Progressive Web App with a compact **Install App** button at the top of the signed-in workspace, and another on the sign-in card for first-time setup.
+
+- On Chrome/Edge/other supported browsers, **Install App** requests the native browser installation prompt when available.
+- If no native prompt is available, it shows concise browser-specific instructions for installing from the browser menu.
+- The app uses `manifest.webmanifest`, local 192/512 PNG icons, and `service-worker.js` scoped to `/DataEntryReports/`.
+- Installation is separate from the existing shared Supabase Auth login. The installed app uses the same unit permissions, reports, CSV/printing, and eServices entry marking.
+- Only public app shell files are cached. **Member data, reports, Supabase authentication, and API responses are never cached by the service worker**; using the reports requires an internet connection.
+- After GitHub Pages deploys the latest `main` branch, refresh the website to enable installation. No custom GitHub Actions workflow is required.
+
 ## Reporting rules
 
 - **Rows:** by default only members with pending eServices entries appear, grouped by **CAPID**. Turning off **Pending only** shows members with any reportable entry in that month, including entered records. Members with no reportable entries are always omitted.
