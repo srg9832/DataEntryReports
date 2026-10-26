@@ -1,0 +1,28 @@
+{
+  "id": "./",
+  "name": "CAP Data Entry Reports",
+  "short_name": "CAP Data Entry",
+  "description": "CAP monthly eServices data entry and reporting queue",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#263e53",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
