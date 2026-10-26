@@ -113,3 +113,9 @@ dialog::backdrop{background:#09223978}
 .report-table th:nth-child(5){width:34%}
 .uniform-cell .record.posted{border-bottom-color:#aacbb7}
 
+
+/* PWA install action: small and consistent with compact toolbar. */
+.login-brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.install-login-button{font-size:11px;min-height:26px;padding:3px 8px;white-space:nowrap}
+#installPwaBtn{white-space:nowrap}
+@media print{#installPwaBtn,#loginInstallPwaBtn{display:none!important}}
