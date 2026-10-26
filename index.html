@@ -3,15 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#14283f">
+  <meta name="theme-color" content="#263e53">
+  <meta name="application-name" content="CAP Data Entry Reports">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CAP Data Entry">
   <meta name="description" content="CAP eServices data entry reporting for authorized staff">
   <title>CAP Data Entry Reports</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=20261026-1">
 </head>
 <body>
   <div id="login" class="login-wrap">
     <form id="loginForm" class="login-card">
-      <div class="logo">CAP <span>/ Data Entry</span></div>
+      <div class="login-brand-row">
+        <div class="logo">CAP <span>/ Data Entry</span></div>
+        <button id="loginInstallPwaBtn" class="secondary install-login-button" type="button">Install App</button>
+      </div>
       <h1>Sign in</h1>
       <p class="muted">Monthly eServices entry queue. Use your existing CAP Applications account.</p>
       <label for="email">Email address</label>
@@ -26,7 +36,7 @@
     <header class="topbar">
       <div class="top-inner">
         <div><div class="logo">CAP <span>/ Data Entry Reports</span></div></div>
-        <div class="account"><span id="accountName"></span><button id="passwordButton" class="topbutton">Password</button><button id="logout" class="topbutton">Sign out</button></div>
+        <div class="account"><span id="accountName"></span><button id="installPwaBtn" class="topbutton" type="button">Install App</button><button id="passwordButton" class="topbutton">Password</button><button id="logout" class="topbutton">Sign out</button></div>
       </div>
     </header>
     <main class="main">
@@ -76,6 +86,6 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.0/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=20261024-4" defer></script>
+  <script src="app.js?v=20261026-pwa1" defer></script>
 </body>
 </html>
