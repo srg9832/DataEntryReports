@@ -385,7 +385,75 @@ async function signOut() {
   state.adminOpen=false;
   $("adminPanel").classList.add("hidden");showLogin();
 }
+
+// Installable PWA: static shell only. Supabase calls always require an online connection.
+let deferredInstallPrompt = null;
+function isRunningStandalone() {
+  return Boolean(window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true);
+}
+function updateInstallButtons() {
+  for(const id of ["installPwaBtn","loginInstallPwaBtn"]){
+    const button=$(id);
+    if(button) button.classList.toggle("hidden",isRunningStandalone());
+  }
+}
+async function requestPwaInstall() {
+  if(isRunningStandalone()) { updateInstallButtons(); return; }
+  if(deferredInstallPrompt) {
+    const prompt=deferredInstallPrompt;
+    deferredInstallPrompt=null;
+    try {
+      await prompt.prompt();
+      const choice=await prompt.userChoice;
+      if(choice?.outcome==="accepted") {
+        updateInstallButtons();
+      }
+    } catch(err) {
+      console.warn("Browser installation prompt unavailable:",err);
+    }
+    return;
+  }
+  // Browser-driven installation may not expose beforeinstallprompt (notably iOS).
+  const ua=navigator.userAgent||"";
+  let instructions;
+  if(/iPhone|iPad|iPod/i.test(ua)) {
+    instructions="Open this site in Safari, tap Share, then Add to Home Screen.";
+  } else if(/Android/i.test(ua)) {
+    instructions="In Chrome, open the browser menu (⋮) and choose Install app or Add to Home screen.";
+  } else if(/Edg\//i.test(ua)) {
+    instructions="In Microsoft Edge, open ⋯ > Apps > Install this site as an app. The install icon may also appear in the address bar.";
+  } else if(/Chrome\//i.test(ua)) {
+    instructions="In Chrome, use the install icon in the address bar or the ⋮ menu and select Install page as app (menu names vary).";
+  } else {
+    instructions="Use your browser's Install App or Add to Home Screen command. Edge or Chrome is recommended on Windows.";
+  }
+  window.alert(instructions);
+}
+function setupPwaInstall() {
+  for(const id of ["installPwaBtn","loginInstallPwaBtn"]){
+    $(id)?.addEventListener("click",requestPwaInstall);
+  }
+  window.addEventListener("beforeinstallprompt",event=>{
+    event.preventDefault();
+    deferredInstallPrompt=event;
+    updateInstallButtons();
+  });
+  window.addEventListener("appinstalled",()=>{
+    deferredInstallPrompt=null;
+    updateInstallButtons();
+  });
+  window.matchMedia?.("(display-mode: standalone)")
+    .addEventListener?.("change",updateInstallButtons);
+  updateInstallButtons();
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./service-worker.js",{scope:"./"})
+      .catch(err=>console.warn("PWA service worker registration failed:",err));
+  }
+}
+
 async function init() {
+  setupPwaInstall();
   $("month").value=currentMonth();
   $("pendingOnly").checked=true;
   if(!window.supabase?.createClient){
